@@ -1,0 +1,29 @@
+name: CI_wxf_k8s
+on:
+  - pull_request
+  - push
+jobs:
+  job1_wxf:
+    runs-on: ubuntu-latest
+    name: build example and deploy to minikube
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: medyagh/local-dev-example-with-minikube
+    - name: 1.Start minikube
+      uses: medyagh/setup-minikube@latest
+    - name: 2.Try the cluster!
+      run: kubectl get pods -A
+    - name: 3.Build image
+      run: |
+        minikube image build -t local/devex:v1 .
+    - name: 4.Deploy to minikube
+      run:
+        kubectl apply -f deploy/k8s.yaml
+        kubectl wait --for=condition=ready pod -l app=local-devex
+    - name: 5.Test service URLs
+      run: |
+        minikube service list
+        minikube service local-devex-svc --url
+        echo "------------------opening the service------------------"
+        curl $(minikube service local-devex-svc --url)
